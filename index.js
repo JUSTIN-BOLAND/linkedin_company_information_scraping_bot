@@ -1,4 +1,3 @@
-    
 // !/usr/bin/env node
 
 // Linkedin Company Data Bot
@@ -33,7 +32,7 @@ var schema = {
 
 function start(){
 	prompt.start();
-	prompt.get(schema, function (err, result) {   
+	prompt.get(schema, function (err, result) {
     console.log('Command-line input received:');
     console.log('  Linkedin email : ' + result.linkedinEmail);
     console.log('  CSV file name (in the /input folder) : ' + result.CSVfileName);
@@ -57,7 +56,7 @@ function readCSV(CSVpath){
 
 function writeCSV(CSVfileName, data){
   csv
-    .writeToPath(CSVfileName, 
+    .writeToPath(CSVfileName,
     data,
     {headers: true, delimiter:'|'})
     .on("finish", function(){
@@ -76,27 +75,29 @@ function addLastDash(url_tested){
 
 async function run(linkedinEmail, linkedinPassword) {
   const browser = await puppeteer.launch({slowMo: 250}); // add {slowMo: 250} to slow down the bot
-  const page = await browser.newPage(); 
-  await page.goto('https://linkedin.com');
+  const page = await browser.newPage();
+  await page.goto('https://linkedin.com/login');
   await page.waitFor(200);
-  var loginSelector ="#login-email";
-  var passwordSelector = "#login-password";
-  var submitLoginSelector = "#login-submit";
+  var loginSelector ="#username";
+  var passwordSelector = "#password";
   await page.click(loginSelector);
   await page.keyboard.type(linkedinEmail);
   await page.waitFor(200);
   await page.click(passwordSelector);
   await page.keyboard.type(linkedinPassword);
   await page.waitFor(100);
-  await page.click(submitLoginSelector);
+  await page.click(passwordSelector);
+  await page.keyboard.press('Enter');
+  await page.waitFor(100);
   await page.waitForNavigation();
   console.log('Identified!');
   var dataToBeExported = [];
   var allCategories = [];
   for (let company of companiesData) {
+    console.log("studying" + company.link);
     companyURL = addLastDash(company.link) + "about/";
     await page.goto(companyURL);
-    await page.waitFor(150);
+    await page.waitFor(250);
     let pageContent = await page.evaluate(() => {
       categories = [];
       function setDefaultVal(value, defaultValue){
@@ -104,7 +105,7 @@ async function run(linkedinEmail, linkedinPassword) {
       }
       function setDefaultValOrSetInnerText(value, defaultValue){
         return (value === undefined) ? defaultValue : value.innerText;
-      } 
+      }
       result = {};
       let name = setDefaultValOrSetInnerText(document.getElementsByClassName('org-top-card-summary__title')[0], "na");
       let employeesOnLinkedin = setDefaultValOrSetInnerText(document.getElementsByClassName('v-align-middle')[0], "na");
@@ -125,9 +126,9 @@ async function run(linkedinEmail, linkedinPassword) {
           if (!categories[detailsCat[i].innerText]){
             categories.push(detailsCat[i].innerText);
           }
-        }   
+        }
       }
-      return {result: result, categories: categories}; 
+      return {result: result, categories: categories};
     });
 
     dataToBeExported.push(pageContent.result);
